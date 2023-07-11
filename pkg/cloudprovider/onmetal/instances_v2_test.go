@@ -32,7 +32,7 @@ import (
 )
 
 var _ = Describe("InstancesV2", func() {
-	ns, _, network, _ := SetupTest()
+	ns, _, network, clusterName := SetupTest()
 
 	It("should get instance info", func(ctx SpecContext) {
 		By("creating a machine")
@@ -51,11 +51,6 @@ var _ = Describe("InstancesV2", func() {
 					},
 				},
 				Volumes: []computev1alpha1.Volume{},
-			},
-		}
-		machine.Spec.NetworkInterfaces[0].NetworkInterfaceSource = computev1alpha1.NetworkInterfaceSource{
-			NetworkInterfaceRef: &corev1.LocalObjectReference{
-				Name: fmt.Sprintf("%s-my-nic", machine.Name),
 			},
 		}
 		Expect(k8sClient.Create(ctx, machine)).To(Succeed())
@@ -86,6 +81,11 @@ var _ = Describe("InstancesV2", func() {
 
 		By("patching the machine status to have a valid virtual IP and internal IP interface address")
 		machineBase := machine.DeepCopy()
+		machine.Spec.NetworkInterfaces[0].NetworkInterfaceSource = computev1alpha1.NetworkInterfaceSource{
+			NetworkInterfaceRef: &corev1.LocalObjectReference{
+				Name: fmt.Sprintf("%s-my-nic", machine.Name),
+			},
+		}
 		machine.Status.State = computev1alpha1.MachineStateRunning
 		machine.Status.NetworkInterfaces = []computev1alpha1.NetworkInterfaceStatus{{
 			Name:      "my-nic",
@@ -139,12 +139,12 @@ var _ = Describe("InstancesV2", func() {
 
 		By("ensuring cluster name label is added to Machine object")
 		Eventually(Object(machine)).Should(SatisfyAll(
-			HaveField("Labels", map[string]string{LabeKeylClusterName: "test"}),
+			HaveField("Labels", map[string]string{LabeKeylClusterName: clusterName}),
 		))
 
 		By("ensuring cluster name label is added to network interface of Machine object")
 		Eventually(Object(netInterface)).Should(SatisfyAll(
-			HaveField("Labels", map[string]string{LabeKeylClusterName: "test"}),
+			HaveField("Labels", map[string]string{LabeKeylClusterName: clusterName}),
 		))
 
 	})
