@@ -17,6 +17,7 @@ package onmetal
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -229,6 +230,10 @@ func (o *onmetalLoadBalancer) applyLoadBalancerRoutingForLoadBalancer(ctx contex
 	if err != nil {
 		return fmt.Errorf("failed to get NetworkInterfaces for Nodes: %w", err)
 	}
+
+	sort.Slice(networkInterfaces, func(i, j int) bool {
+		return networkInterfaces[i].UID < networkInterfaces[j].UID
+	})
 
 	network := &networkingv1alpha1.Network{}
 	networkKey := client.ObjectKey{Namespace: o.onmetalNamespace, Name: loadBalancer.Spec.NetworkRef.Name}
