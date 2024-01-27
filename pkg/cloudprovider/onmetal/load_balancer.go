@@ -113,8 +113,9 @@ func (o *onmetalLoadBalancer) EnsureLoadBalancer(ctx context.Context, clusterNam
 	klog.V(2).InfoS("Getting LoadBalancer ports from Service", "Service", client.ObjectKeyFromObject(service))
 	var lbPorts []networkingv1alpha1.LoadBalancerPort
 	for _, svcPort := range service.Spec.Ports {
+		protocol := svcPort.Protocol
 		lbPorts = append(lbPorts, networkingv1alpha1.LoadBalancerPort{
-			Protocol: &svcPort.Protocol,
+			Protocol: &protocol,
 			Port:     svcPort.Port,
 		})
 	}
