@@ -222,6 +222,22 @@ func waitLoadBalancerActive(ctx context.Context, onmetalClient client.Client, ex
 		return loadBalancerStatus, fmt.Errorf("timeout waiting for the LoadBalancer %s to become ready", client.ObjectKeyFromObject(loadBalancer))
 	}
 
+	// workaround for refresh issues on the machinepoollet
+	lbr := &networkingv1alpha1.LoadBalancerRouting{}
+	if err := onmetalClient.Get(ctx, client.ObjectKey{Namespace: loadBalancer.Namespace, Name: loadBalancer.Name}, lbr); err != nil {
+		return loadBalancerStatus, err
+	}
+
+	if len(lbr.Labels) == 0 {
+		lbr.Labels = make(map[string]string)
+	}
+	formattedTime := strings.ReplaceAll(time.Now().Format(time.RFC3339), ":", "-")
+	formattedTime = strings.TrimSuffix(formattedTime, "Z") // If you want to remove 'Z' at the end
+	lbr.Labels["updated"] = formattedTime
+	if err := onmetalClient.Update(ctx, lbr); err != nil {
+		return loadBalancerStatus, err
+	}
+
 	klog.V(2).InfoS("LoadBalancer became ready", "LoadBalancer", client.ObjectKeyFromObject(loadBalancer))
 	return loadBalancerStatus, nil
 }
